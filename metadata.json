@@ -1,0 +1,8 @@
+{
+  "name": "Nightscout BG extension",
+  "description": "Display Blood Glucose level fetched from Nightscout API",
+  "uuid": "nightscout-bg@yaroslav.osypenko",
+  "shell-version": [
+    "42"
+  ]
+}
