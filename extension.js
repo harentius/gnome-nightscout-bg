@@ -14,6 +14,7 @@ const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const Main = imports.ui.main;
 const PanelMenu = imports.ui.panelMenu;
+const Clutter = imports.gi.Clutter;
 
 const Soup = imports.gi.Soup;
 
@@ -28,7 +29,7 @@ class Client {
   async getCurrentBg() {
     let success = false;
     let retry = 1;
-    let result = { sgv: undefined, direction: undefined };
+    let result = { sgv: undefined, direction: undefined, date: undefined };
 
     while (!success && retry <= 3) {
       try {
@@ -46,7 +47,7 @@ class Client {
 
         success = true;
 
-        result = { sgv: entry.sgv, direction: entry.direction };
+        result = { sgv: entry.sgv, direction: entry.direction, date: entry.date };
       } catch (e) {
         log(e);
       } finally {
@@ -164,7 +165,7 @@ class DataProvider {
       }
 
       this.bg = v;
-      this._lastBGDate = Date.now();
+      this._lastBGDate = v.date ? new Date(v.date) : Date.now();
       this._refreshOutdatedData();
       this._triggerUpdate();
     });
@@ -187,7 +188,6 @@ class DataProvider {
     const currentDate = Date.now();
 
     const minutesAgo = date => Math.floor((currentDate - date) / 60 / 1000);
-
     this._bgMinutesAgo = this._lastBGDate ? minutesAgo(this._lastBGDate) : undefined;
     this._iobMinutesAgo = this._lastIOBDate ? minutesAgo(this._lastIOBDate) : undefined;
 
@@ -204,13 +204,15 @@ class DataProvider {
 
 class Presenter {
   static print(bg, bgDirectionString, iob, bgMinutesAgo, iobMinutesAgo) {
-    const bgMinutesAgoString = bgMinutesAgo ? Presenter._toSubScript(bgMinutesAgo) : '';
-    const iobMinutesAgoString = iobMinutesAgo ? Presenter._toSubScript(iobMinutesAgo) : '';
+    const bgMinutesAgoString = (bgMinutesAgo && bgMinutesAgo > showMissingInterval)
+      ? Presenter._toSubScript(bgMinutesAgo) : '';
+    const iobMinutesAgoString = (iobMinutesAgo && iobMinutesAgo > showMissingInterval)
+      ? Presenter._toSubScript(iobMinutesAgo) : '';
     const bgValue = usemmol ? Presenter._roundUsing(Math.ceil, 1, bg * 0.0555).toFixed(1) : bg;
     const directionGlyph = Presenter._getDirectionGlyph(bgDirectionString);
     const iobString = iob ? `${iob.toFixed(1)}u` : '';
 
-    return `${bgValue}${bgMinutesAgoString}${directionGlyph}${iobString}${iobMinutesAgoString}`;
+    return `${bgValue}${bgMinutesAgoString}${directionGlyph} ${iobString}${iobMinutesAgoString}`;
   }
 
   static _getDirectionGlyph(direction) {
@@ -270,7 +272,7 @@ class Extension {
     log(`enabling ${Me.metadata.name}`);
     let indicatorName = `${Me.metadata.name} Indicator`;
     this._indicator = new PanelMenu.Button(0.0, indicatorName, false);
-    this.label = new St.Label({ text: '' });
+    this.label = new St.Label({ text: '', y_align: Clutter.ActorAlign.CENTER });
     this._indicator.add_child(this.label);
     Main.panel.addToStatusArea(indicatorName, this._indicator);
 
