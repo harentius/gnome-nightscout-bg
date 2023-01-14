@@ -17,10 +17,6 @@ const PanelMenu = imports.ui.panelMenu;
 const Clutter = imports.gi.Clutter;
 
 const Soup = imports.gi.Soup;
-
-const _httpSession = new Soup.SessionAsync();
-Soup.Session.prototype.add_feature.call(_httpSession, new Soup.ProxyResolverDefault());
-
 class Client {
   constructor(host) {
     this.host = host;
@@ -96,6 +92,9 @@ class Client {
   }
 
   async _makeHttpRequest(method, uri) {
+    const _httpSession = new Soup.SessionAsync();
+    // Soup.Session.prototype.add_feature.call(_httpSession, new Soup.ProxyResolverDefault());
+
     uri = `${this.host}${uri}`;
 
     return new Promise((resolve, reject) => {
